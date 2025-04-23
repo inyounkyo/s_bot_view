@@ -27,7 +27,7 @@ public class BotApiService {
 
         Map<String, String> m1 = new HashMap<>();
         m1.put("id", "1");
-        m1.put("tiker", "XRP");
+        m1.put("tiker", "BTC");
         m1.put("side", "BID");
         m1.put("date", "2025-04-18 13:34:30");
         m1.put("income_per", "2.34");
