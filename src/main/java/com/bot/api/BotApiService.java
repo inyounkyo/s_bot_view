@@ -2,52 +2,69 @@ package com.bot.api;
 
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 
 @RestController
 @CrossOrigin(origins = "*", methods = RequestMethod.GET)
 public class BotApiService {
 
-    //@GetMapping("tourreviewUpdateForm/{boardId}/{num}")
-    @GetMapping("/getList")
+    static String SQLLITE_DB_PATH = "C:\\projects\\db_sqlite_bot_view\\db_bot_view.db";
+
+    @GetMapping("/getProfitList")
     @ResponseBody
-    public List<Map<String,String>> getList(
-            /*@PathVariable int boardId, @PathVariable int num, Model model
-              @PathVariable Map<String,int> pathMap, Model model
-            * */
-            @RequestParam(value="id", required=false) String id ) {
-            /*
-            * int id = pathMap.get("id");
-            int num = pathMap.get("num");*/
+    public List<Map<String,Object>> getProfitList( @RequestParam Map<String, Object> params ){
 
-        List<Map<String,String>> list = new ArrayList<>();
+        System.out.println(params.get("from_kst_date"));
+        System.out.println(params.get("to_kst_date"));
+        System.out.println(params.get("sideRef"));
 
-        Map<String, String> m1 = new HashMap<>();
-        m1.put("id", "1");
-        m1.put("tiker", "BTC");
-        m1.put("side", "BID");
-        m1.put("date", "2025-04-18 13:34:30");
-        m1.put("income_per", "2.34");
-        m1.put("profit_krw", "2.34");
-        m1.put("ccount_krw", "96,000");
+        Connection connection = null;
+        PreparedStatement pstmt = null;
+        List<Map<String,Object>> list = new ArrayList<>();
+        Map<String, Object> map = null;
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:"+SQLLITE_DB_PATH);
+            String sql = "SELECT * FROM TB_COIN_INCOME " +
+                    "WHERE date(KST_DATE) BETWEEN ? and ?";
 
-        Map<String, String> m2 = new HashMap<>();
-        m2.put("id", "2");
-        m2.put("tiker", "DOGE");
-        m2.put("side", "ASK");
-        m2.put("date", "2025-04-18 13:34:30");
-        m2.put("income_per", "2.34");
-        m2.put("profit_krw", "2.34");
-        m2.put("ccount_krw", "96,000");
+            if( !params.get("sideRef").toString().equals("ALL")){
+                sql += " and side = ?";
+            }
 
-        list.add(m1);
-        list.add(m2);
+            pstmt = connection.prepareStatement(sql);
+            pstmt.setString(1, params.get("from_kst_date").toString());
+            pstmt.setString(2, params.get("to_kst_date").toString());
+            if( !params.get("sideRef").toString().equals("ALL"))
+                pstmt.setString(3, params.get("sideRef").toString());
 
-        System.out.println(list);
+            ResultSet rs = pstmt.executeQuery();
+
+            while(rs.next()){
+                map = new HashMap<>();
+                map.put("no", rs.getInt("no"));
+                map.put("tiker", rs.getString("tiker"));
+                map.put("scr", rs.getFloat("scr"));
+                map.put("tp0", rs.getFloat("tp0"));
+                map.put("side", rs.getString("side"));
+                map.put("kst_date", rs.getString("kst_date"));
+                map.put("income_per", rs.getFloat("income_per"));
+                map.put("profit_krw", rs.getInt("profit_krw"));
+                map.put("account_krw", rs.getInt("account_krw"));
+                map.put("bid_ask_pair_gr", rs.getString("bid_ask_pair_gr"));
+
+                list.add(map);
+
+            }
+            rs.close();
+            connection.close();
+        }
+        catch(SQLException e) {
+            System.err.println(e.getMessage());
+        }
 
         return list;
     }
+
+
 }
